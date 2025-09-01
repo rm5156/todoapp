@@ -12,8 +12,6 @@
       justify-content: center;
       padding-top: 50px;
       overflow: hidden;
-
-      /* 青空背景 */
       background: linear-gradient(to top, #1e90ff, #87cefa);
     }
 
@@ -33,7 +31,6 @@
       background: white;
       border-radius: 50%;
     }
-
     .cloud1 {
       width: 120px;
       height: 60px;
@@ -41,19 +38,8 @@
       left: -200px;
       animation-duration: 60s;
     }
-    .cloud1::before {
-      width: 60px;
-      height: 60px;
-      top: -20px;
-      left: 10px;
-    }
-    .cloud1::after {
-      width: 80px;
-      height: 80px;
-      top: -30px;
-      left: 50px;
-    }
-
+    .cloud1::before { width: 60px; height: 60px; top: -20px; left: 10px; }
+    .cloud1::after { width: 80px; height: 80px; top: -30px; left: 50px; }
     .cloud2 {
       width: 180px;
       height: 80px;
@@ -61,20 +47,9 @@
       left: -300px;
       animation-duration: 90s;
     }
-    .cloud2::before {
-      width: 80px;
-      height: 80px;
-      top: -30px;
-      left: 20px;
-    }
-    .cloud2::after {
-      width: 100px;
-      height: 100px;
-      top: -40px;
-      left: 70px;
-    }
+    .cloud2::before { width: 80px; height: 80px; top: -30px; left: 20px; }
+    .cloud2::after { width: 100px; height: 100px; top: -40px; left: 70px; }
 
-    /* 雲のアニメーション */
     @keyframes moveClouds {
       from { transform: translateX(0); }
       to { transform: translateX(120vw); }
@@ -98,7 +73,7 @@
       padding: 30px 40px;
       border-radius: 12px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-      width: 600px;
+      width: 650px;
       z-index: 10;
     }
 
@@ -107,13 +82,18 @@
       color: #2c3e50;
     }
 
-    input[type="text"] {
-      width: 75%;
-      padding: 10px;
-      margin-right: 10px;
+    .input-area {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    input[type="text"], input[type="date"], select {
+      padding: 8px;
       border-radius: 5px;
       border: 1px solid #ccc;
-      font-size: 18px;
+      font-size: 16px;
     }
 
     button {
@@ -123,14 +103,10 @@
       background-color: #4CAF50;
       color: white;
       cursor: pointer;
-      font-size: 18px;
+      font-size: 16px;
       transition: transform 0.2s, background-color 0.2s;
     }
-
-    button:hover {
-      background-color: #45a049;
-      transform: scale(1.05);
-    }
+    button:hover { background-color: #45a049; transform: scale(1.05); }
 
     ul {
       list-style: none;
@@ -142,35 +118,27 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background-color: #f0f0f0;
       padding: 12px 15px;
-      border-radius: 5px;
+      border-radius: 8px;
       margin-bottom: 12px;
-      font-size: 18px;
+      font-size: 16px;
       transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s;
       opacity: 1;
     }
+    li:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.2); }
 
-    li:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 15px rgba(0,0,0,0.2);
-    }
+    .task-info { display: flex; flex-direction: column; }
+    .deadline { font-size: 14px; color: #555; }
 
-    li button {
-      background-color: #e74c3c;
-      margin-left: 10px;
-      transition: transform 0.2s, background-color 0.2s;
-    }
+    /* ステータスごとの色分け */
+    .status-notstarted { background-color: #ffe5e5; }
+    .status-inprogress { background-color: #fff8dc; }
+    .status-completed  { background-color: #e5ffe5; text-decoration: line-through; color: gray; }
 
-    li button:hover {
-      background-color: #c0392b;
-      transform: scale(1.1);
-    }
-
-    li.completed {
-      text-decoration: line-through;
-      color: gray;
-    }
+    /* 期限警告 */
+    .overdue { color: red; font-weight: bold; }
+    .due-today { color: darkorange; font-weight: bold; }
+    .due-soon { color: crimson; }
   </style>
 </head>
 <body>
@@ -184,14 +152,24 @@
   <!-- ToDoリスト -->
   <div id="todo-app">
     <h1>☁️ ToDoリスト</h1>
-    <input type="text" id="task-input" placeholder="タスクを入力" />
-    <button id="add-btn">追加</button>
+    <div class="input-area">
+      <input type="text" id="task-input" placeholder="タスクを入力" />
+      <input type="date" id="deadline-input" />
+      <select id="status-input">
+        <option value="notstarted">未着手</option>
+        <option value="inprogress">進行中</option>
+        <option value="completed">完了</option>
+      </select>
+      <button id="add-btn">追加</button>
+    </div>
     <ul id="task-list"></ul>
   </div>
 
   <script>
     const addBtn = document.getElementById('add-btn');
     const taskInput = document.getElementById('task-input');
+    const deadlineInput = document.getElementById('deadline-input');
+    const statusInput = document.getElementById('status-input');
     const taskList = document.getElementById('task-list');
 
     function getSavedTasks() {
@@ -206,20 +184,72 @@
     function saveTasks() {
       const tasks = [];
       document.querySelectorAll('#task-list li').forEach(li => {
-        const span = li.querySelector('.task-text');
-        const text = span ? span.textContent : '';
-        tasks.push({ text, completed: li.classList.contains('completed') });
+        const text = li.querySelector('.task-text')?.textContent || '';
+        const deadline = li.querySelector('.deadline')?.dataset.date || '';
+        const status = li.dataset.status || 'notstarted';
+        tasks.push({ text, deadline, status });
       });
       localStorage.setItem('tasks', JSON.stringify(tasks));
     }
 
-    function createTaskElement(text, completed = false) {
+    function checkDeadline(deadline, span) {
+      if (!deadline) return;
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const dueDate = new Date(deadline);
+      dueDate.setHours(0,0,0,0);
+      const diffDays = Math.floor((dueDate - today) / (1000 * 60 * 60 * 24));
+
+      span.classList.remove("overdue","due-today","due-soon");
+      if (diffDays < 0) {
+        span.classList.add("overdue");
+      } else if (diffDays === 0) {
+        span.classList.add("due-today");
+      } else if (diffDays <= 3) {
+        span.classList.add("due-soon");
+      }
+    }
+
+    function createTaskElement(text, deadline = '', status = 'notstarted') {
       const li = document.createElement('li');
+      li.dataset.status = status;
+      li.classList.add(`status-${status}`);
       li.style.opacity = 0;
+
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'task-info';
 
       const textSpan = document.createElement('span');
       textSpan.className = 'task-text';
       textSpan.textContent = text;
+
+      const deadlineSpan = document.createElement('span');
+      deadlineSpan.className = 'deadline';
+      deadlineSpan.dataset.date = deadline;
+      if (deadline) {
+        deadlineSpan.textContent = `期限: ${deadline}`;
+        checkDeadline(deadline, deadlineSpan);
+      }
+
+      infoDiv.appendChild(textSpan);
+      if (deadline) infoDiv.appendChild(deadlineSpan);
+
+      const statusSelect = document.createElement('select');
+      ['notstarted','inprogress','completed'].forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = (s === 'notstarted') ? '未着手' :
+                          (s === 'inprogress') ? '進行中' : '完了';
+        if (s === status) opt.selected = true;
+        statusSelect.appendChild(opt);
+      });
+
+      statusSelect.addEventListener('change', () => {
+        li.className = '';
+        li.classList.add(`status-${statusSelect.value}`);
+        li.dataset.status = statusSelect.value;
+        saveTasks();
+      });
 
       const deleteBtn = document.createElement('button');
       deleteBtn.textContent = '削除';
@@ -229,28 +259,27 @@
         setTimeout(() => { li.remove(); saveTasks(); }, 300);
       });
 
-      li.appendChild(textSpan);
+      li.appendChild(infoDiv);
+      li.appendChild(statusSelect);
       li.appendChild(deleteBtn);
-      if (completed) li.classList.add('completed');
-
-      li.addEventListener('click', () => {
-        li.classList.toggle('completed');
-        saveTasks();
-      });
 
       taskList.appendChild(li);
       setTimeout(() => { li.style.opacity = 1; }, 10);
     }
 
     function loadTasks() {
-      getSavedTasks().forEach(t => createTaskElement(t.text, t.completed));
+      getSavedTasks().forEach(t => createTaskElement(t.text, t.deadline, t.status));
     }
 
     addBtn.addEventListener('click', () => {
       const taskText = taskInput.value.trim();
+      const deadline = deadlineInput.value;
+      const status = statusInput.value;
       if (!taskText) return;
-      createTaskElement(taskText);
+      createTaskElement(taskText, deadline, status);
       taskInput.value = '';
+      deadlineInput.value = '';
+      statusInput.value = 'notstarted';
       saveTasks();
     });
 
@@ -259,6 +288,13 @@
     });
 
     loadTasks();
+
+    /* ページ表示後に定期的に締切チェック */
+    setInterval(() => {
+      document.querySelectorAll('.deadline').forEach(span => {
+        checkDeadline(span.dataset.date, span);
+      });
+    }, 60000); // 1分ごと更新
   </script>
 </body>
 </html>
